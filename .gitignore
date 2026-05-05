@@ -1,0 +1,10 @@
+﻿uploads/
+uploads_temp/
+clean_data/
+_historial/
+__pycache__/
+*.xlsb
+*.xlsx
+_data.json
+_usuarios.json
+*.pyc
