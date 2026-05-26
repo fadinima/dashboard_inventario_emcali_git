@@ -884,7 +884,14 @@ tbody td{padding:10px 14px}
 <div class="nav">
   <a class="btn btn-p" href="/dashboard_uga/dashboard">&#128202; Dashboard Actual</a>
   <a class="btn btn-s" href="/dashboard_uga/cargar">&#128194; Cargar Nuevo</a>
-  <button class="btn btn-cmp" id="btnCmp" onclick="comparar()" disabled>&#9878; Comparar Periodos Seleccionados</button>
+  <select id="selGerCmp" style="background:#2D3347;border:1px solid #3D4562;color:#E8ECF4;padding:7px 14px;border-radius:7px;font-size:12px;outline:none;cursor:pointer;margin-right:8px">
+  <option value="TODAS">Todas las gerencias</option>
+  <option value="Gerencia Energia">Gerencia Energia</option>
+  <option value="Gerencia Acueducto - Alcantarillado">Gerencia Acueducto</option>
+  <option value="Gerencia Telecomunicaciones">Gerencia Telecom.</option>
+  <option value="Corporativo">Corporativo</option>
+</select>
+<button class="btn btn-cmp" id="btnCmp" onclick="comparar()" disabled>&#9878; Comparar Periodos Seleccionados</button>
 </div>
 {% else %}
 <div class="empty">Aun no hay reportes.<br><br>Carga el primer archivo SAP para comenzar el historial.</div>
@@ -934,8 +941,10 @@ function comparar(){
   if(sel.length<2) return;
   document.getElementById("modalCmp").style.display="flex";
   document.getElementById("cmpBody").innerHTML="<div style='text-align:center;padding:40px;color:#8A94B2'>Cargando...</div>";
+  var _gCmp=document.getElementById("selGerCmp")?document.getElementById("selGerCmp").value:"TODAS";
   Promise.all(sel.map(function(s){
-    return fetch("/historial/datos/"+s.id).then(function(r){return r.json();});
+    var _u="/historial/datos/"+s.id+(_gCmp&&_gCmp!="TODAS"?"?gerencia="+encodeURIComponent(_gCmp):"");
+    return fetch(_u).then(function(r){return r.json();});
   })).then(function(res){
     var periodos=sel.map(function(s){return s.label;});
     function dif(va,vb){
@@ -1229,7 +1238,11 @@ var _CXR=_CX.map(function(r){
 var OP={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8A94B2",font:{size:10},boxWidth:12}},tooltip:{backgroundColor:"rgba(26,31,46,.95)",titleColor:"#00C5D4",bodyColor:"#E8ECF4",borderColor:"#3D4562",borderWidth:1}}};
 function pg(id,b){document.querySelectorAll(".pg").forEach(function(x){x.classList.remove("on")});document.querySelectorAll(".tab").forEach(function(x){x.classList.remove("on")});document.getElementById("pg-"+id).classList.add("on");b.classList.add("on");}
 function filtrar(){var q=document.getElementById("srch").value.toLowerCase();document.querySelectorAll("#tD tbody tr").forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q)>=0?"":"none"});}
-function filtrarGerencia(g){window.location.href="/dashboard_uga/dashboard?gerencia="+encodeURIComponent(g)+"&t="+Date.now();}
+var _HIST_ID={{ hist_id|tojson if hist_id else "null" }};
+function filtrarGerencia(g){
+  var base=_HIST_ID?("/historial/ver/"+_HIST_ID):"/dashboard_uga/dashboard";
+  window.location.href=base+"?gerencia="+encodeURIComponent(g)+"&t="+Date.now();
+}
 function abrirModal(){document.getElementById("modalCentros").style.display="flex";document.body.style.overflow="hidden";}
 function cerrarModal(){document.getElementById("modalCentros").style.display="none";document.body.style.overflow="";}
 function abrirGrafCentros(){
@@ -1636,6 +1649,10 @@ def eliminar_historial(id_rep):
 def datos_historial(id_rep):
     datos = cargar_historial(id_rep)
     if not datos: return json.dumps({})
+    gerencia = request.args.get("gerencia", "TODAS")
+    if gerencia and gerencia != "TODAS":
+        datos = filtrar_por_gerencia(datos, gerencia)
+    return json.dumps(datos, ensure_ascii=False)
     return json.dumps(datos, ensure_ascii=False)
 
 @app.route("/diagnostico")
