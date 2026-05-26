@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cargar Inventario</title>
+</head>
+<body>
+
+<h2>Cargar archivo XLSB</h2>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <button type="submit">Subir archivo</button>
+</form>
+
+<br>
+
+<a href="/dashboard">Ir al Dashboard</a>
+
+<ul>
+{% for archivo in archivos %}
+<li>{{ archivo }}</li>
+{% endfor %}
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "admin": {
+    "password": "emcali2024",
+    "rol": "admin",
+    "nombre": "Administrador",
+    "gerencia": "TODAS"
+  },
+  "viewer": {
+    "password": "emcali123",
+    "rol": "viewer",
+    "nombre": "Visualizador",
+    "gerencia": "TODAS"
+  }
+}

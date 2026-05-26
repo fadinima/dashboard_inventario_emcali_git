@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Inventarios</title>
+</head>
+<body>
+
+<h2>Dashboard Inventarios</h2>
+
+<table border="1">
+<tr>
+{% for col in columnas %}
+<th>{{ col }}</th>
+{% endfor %}
+</tr>
+
+{% for fila in data %}
+<tr>
+{% for col in columnas %}
+<td>{{ fila[col] }}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+
+</table>
+
+</body>
+</html>
