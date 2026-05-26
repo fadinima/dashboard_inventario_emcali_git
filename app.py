@@ -142,7 +142,7 @@ def guardar_historial(datos):
     return ts
 
 def listar_historial():
-    archivos = sorted(glob.glob(os.path.join(HDIR, "*.json")), reverse=True)
+    archivos = sorted(glob.glob(os.path.join(HDIR, "*.json")), reverse=False)
     lista = []
     for a in archivos:
         try:
@@ -1240,7 +1240,7 @@ function pg(id,b){document.querySelectorAll(".pg").forEach(function(x){x.classLi
 function filtrar(){var q=document.getElementById("srch").value.toLowerCase();document.querySelectorAll("#tD tbody tr").forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q)>=0?"":"none"});}
 var _HIST_ID={{ hist_id|tojson if hist_id else "null" }};
 function filtrarGerencia(g){
-  var base=_HIST_ID?("/historial/ver/"+_HIST_ID):"/dashboard_uga/dashboard";
+  var base=_HIST_ID?("/historial/"+_HIST_ID):"/dashboard_uga/dashboard";
   window.location.href=base+"?gerencia="+encodeURIComponent(g)+"&t="+Date.now();
 }
 function abrirModal(){document.getElementById("modalCentros").style.display="flex";document.body.style.overflow="hidden";}
@@ -1633,7 +1633,19 @@ def historial():
 def ver_historial(id_rep):
     datos = cargar_historial(id_rep)
     if not datos: return redirect("/historial")
-    return render_template_string(DASH_T, d=datos, hist_id=id_rep)
+    gerencia_sel = request.args.get("gerencia", "TODAS")
+    if gerencia_sel and gerencia_sel != "TODAS":
+        datos = filtrar_por_gerencia(datos, gerencia_sel)
+    else:
+        ei = datos.get("edad_inventario_oficial") or datos.get("edad_por_ger", {}).get("TODAS")
+        if ei: datos["edad_inventario"] = ei
+    usuario = session.get("usuario", {})
+    from flask import make_response
+    resp = make_response(render_template_string(DASH_T, d=datos, hist_id=id_rep,
+                         usuario=usuario, gerencia_sel=gerencia_sel))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 @app.route("/historial/eliminar/<id_rep>", methods=["POST"])
 def eliminar_historial(id_rep):
