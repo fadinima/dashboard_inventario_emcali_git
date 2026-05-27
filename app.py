@@ -142,7 +142,7 @@ def guardar_historial(datos):
     return ts
 
 def listar_historial():
-    archivos = sorted(glob.glob(os.path.join(HDIR, "*.json")), reverse=False)
+    archivos = sorted(glob.glob(os.path.join(HDIR, "*.json")), reverse=True)
     lista = []
     for a in archivos:
         try:
@@ -1071,6 +1071,7 @@ tbody td{padding:7px 10px;color:var(--TL);white-space:nowrap}
 {% endif %}
 <a href="/dashboard_uga/logout" class="bn" style="background:rgba(255,75,110,.15);border-color:rgba(255,75,110,.5);color:#FF4B6E;font-weight:900">&#128682; Cerrar Sesion</a>
 </div></div></div>
+{% if d._stale %}<div style="background:rgba(232,0,61,.15);border-bottom:2px solid #E8003D;padding:8px 30px;font-size:12px;color:#FF4B6E">&#9888; <strong>Datos desactualizados.</strong> <a href="/dashboard_uga/cargar" style="color:#F5C518;font-weight:700">Carga el archivo SAP</a> nuevamente para ver todos los centros correctamente.</div>{% endif %}
 {% if hist_id %}
 <div class="hist-banner">&#9888;&nbsp; Viendo reporte historico del mes <strong>{{ d._mes }}</strong> &nbsp;&mdash;&nbsp; <a href="/dashboard_uga/dashboard">Ver reporte actual &rarr;</a></div>
 {% endif %}
@@ -1240,7 +1241,7 @@ function pg(id,b){document.querySelectorAll(".pg").forEach(function(x){x.classLi
 function filtrar(){var q=document.getElementById("srch").value.toLowerCase();document.querySelectorAll("#tD tbody tr").forEach(function(r){r.style.display=r.textContent.toLowerCase().indexOf(q)>=0?"":"none"});}
 var _HIST_ID={{ hist_id|tojson if hist_id else "null" }};
 function filtrarGerencia(g){
-  var base=_HIST_ID?("/historial/"+_HIST_ID):"/dashboard_uga/dashboard";
+  var base=_HIST_ID?("/historial/ver/"+_HIST_ID):"/dashboard_uga/dashboard";
   window.location.href=base+"?gerencia="+encodeURIComponent(g)+"&t="+Date.now();
 }
 function abrirModal(){document.getElementById("modalCentros").style.display="flex";document.body.style.overflow="hidden";}
@@ -1435,8 +1436,9 @@ def usuarios():
     if os.path.exists(DJSON):
         with open(DJSON, encoding="utf-8") as fp:
             d = json.load(fp)
-        # AUTO-FIX: si referencias=0 en tabla_centros, calcular desde tabla_detallada
+        # AUTO-FIX: detectar datos viejos y parchear referencias
         _tc = d.get("tabla_centros", [])
+        d["_stale"] = len(_tc) < 45
         if _tc and all(str(c.get("referencias","0")).replace(",","").strip() in ("0","") for c in _tc):
             from collections import Counter as _C
             _det = d.get("tabla_detallada", [])
@@ -1633,19 +1635,7 @@ def historial():
 def ver_historial(id_rep):
     datos = cargar_historial(id_rep)
     if not datos: return redirect("/historial")
-    gerencia_sel = request.args.get("gerencia", "TODAS")
-    if gerencia_sel and gerencia_sel != "TODAS":
-        datos = filtrar_por_gerencia(datos, gerencia_sel)
-    else:
-        ei = datos.get("edad_inventario_oficial") or datos.get("edad_por_ger", {}).get("TODAS")
-        if ei: datos["edad_inventario"] = ei
-    usuario = session.get("usuario", {})
-    from flask import make_response
-    resp = make_response(render_template_string(DASH_T, d=datos, hist_id=id_rep,
-                         usuario=usuario, gerencia_sel=gerencia_sel))
-    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-    resp.headers["Pragma"] = "no-cache"
-    return resp
+    return render_template_string(DASH_T, d=datos, hist_id=id_rep)
 
 @app.route("/historial/eliminar/<id_rep>", methods=["POST"])
 def eliminar_historial(id_rep):
