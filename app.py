@@ -142,7 +142,7 @@ def guardar_historial(datos):
     return ts
 
 def listar_historial():
-    archivos = sorted(glob.glob(os.path.join(HDIR, "*.json")), reverse=True)
+    archivos = glob.glob(os.path.join(HDIR, "*.json"))
     lista = []
     for a in archivos:
         try:
@@ -155,6 +155,7 @@ def listar_historial():
                           "cob":d.get("kpis",{}).get("cobertura",""),
                           "refs":d.get("kpis",{}).get("referencias","")})
         except: pass
+    lista.sort(key=lambda x: x.get("mes","0000-00"))
     return lista
 
 def cargar_historial(id_rep):
@@ -1363,10 +1364,11 @@ def filtrar_por_gerencia(datos, gerencia):
     for r in det:
         c = r.get("centro","SIN CENTRO")
         if c not in centros:
-            centros[c] = {"stk":0,"imp":0,"sal":0,"cob_sum":0,"n":0}
+            centros[c] = {"stk":0,"imp":0,"sal":0,"refs":0,"cob_sum":0,"n":0}
         centros[c]["stk"] += parse(r.get("stock",0))
         centros[c]["imp"] += parse(r.get("importe",0))
         centros[c]["sal"] += parse(r.get("salidas",0))
+        centros[c]["refs"] += 1
         cv = parse(r.get("cobertura",0))
         if cv > 0: centros[c]["cob_sum"] += cv; centros[c]["n"] += 1
 
@@ -1375,7 +1377,7 @@ def filtrar_por_gerencia(datos, gerencia):
         "stock":    "{:,.0f}".format(v["stk"]),
         "importe":  "$ {:,.0f}".format(v["imp"]),
         "salidas":  "{:,.0f}".format(v["sal"]),
-        "referencias": str(0),
+        "referencias": "{:,.0f}".format(v.get("refs",0)),
         "cobertura": fmt_cob(H * v["stk"] / v["sal"] if v["sal"] > 0 else 0)}
         for i,(n,v) in enumerate(cs)]
 
